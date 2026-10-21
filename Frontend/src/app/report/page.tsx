@@ -3,12 +3,20 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+type Indicator = {
+  title: string;
+  level: "normal" | "warning" | "danger";
+  description: string;
+};
+
 type AnalysisResult = {
   fileName: string;
   fileType: string;
   fileSize: number;
   kind: "image" | "pdf";
   metadata: Record<string, string | number | boolean | null>;
+  indicators: Indicator[];
+  overallStatus: string;
 };
 
 const limitations = [
@@ -27,21 +35,37 @@ function formatValue(value: string | number | boolean | null | undefined) {
   return String(value);
 }
 
-export default function ReportPage() {
-const [result, setResult] = useState<AnalysisResult | null>(null);
-const [analyzedAt, setAnalyzedAt] = useState("");
-//
-useEffect(() => {
-  const raw = sessionStorage.getItem("analysisResult");
-  if (raw) setResult(JSON.parse(raw) as AnalysisResult);
+function statusStyles(status: string) {
+  if (status === "Suspicious signals") return "bg-red-100 text-red-800";
+  if (status === "Attention required") return "bg-amber-100 text-amber-800";
+  return "bg-green-100 text-green-800";
+}
 
-  setAnalyzedAt(
-    new Date().toLocaleString("en-GB", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    })
-  );
-}, []);
+function levelStyles(level: Indicator["level"]) {
+  if (level === "danger") {
+    return { box: "bg-red-50 border-red-200", badge: "bg-red-100 text-red-800", label: "Suspicious" };
+  }
+  if (level === "warning") {
+    return { box: "bg-amber-50 border-amber-200", badge: "bg-amber-100 text-amber-800", label: "Attention" };
+  }
+  return { box: "bg-green-50 border-green-200", badge: "bg-green-100 text-green-800", label: "Normal" };
+}
+
+export default function ReportPage() {
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [analyzedAt, setAnalyzedAt] = useState("");
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("analysisResult");
+    if (raw) setResult(JSON.parse(raw) as AnalysisResult);
+
+    setAnalyzedAt(
+      new Date().toLocaleString("en-GB", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    );
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -86,9 +110,11 @@ useEffect(() => {
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
               Verification Profile
             </h1>
-            <span className="px-3 py-1 bg-slate-100 text-slate-700 text-sm font-medium rounded-full">
-              Metadata extracted
-            </span>
+            {result && (
+              <span className={`px-3 py-1 text-sm font-medium rounded-full ${statusStyles(result.overallStatus)}`}>
+                {result.overallStatus}
+              </span>
+            )}
           </div>
           <p className="text-slate-600 text-sm">
             {result
@@ -114,25 +140,46 @@ useEffect(() => {
             <section className="bg-white border border-slate-200 rounded-xl p-6 mb-6">
               <h2 className="font-semibold text-slate-900 mb-3">Summary</h2>
               <p className="text-slate-700 leading-relaxed">
-                Technical metadata was extracted from this {result.kind} file. Anomaly rules and
-                the AI explanation are not connected yet. The values below come directly from the
-                file.
+                Technical metadata was extracted and checked with fixed rules. These indicators
+                support human review. They do not decide whether the file is authentic.
               </p>
             </section>
 
-            <section className="bg-white border border-slate-200 rounded-xl p-6 mb-6">
-              <h2 className="font-semibold text-slate-900 mb-4">Technical Metadata</h2>
-              <div className="space-y-3">
-                {Object.entries(result.metadata).map(([key, value]) => (
-                  <div key={key} className="flex justify-between text-sm gap-4">
-                    <span className="text-slate-500 shrink-0">{key}</span>
-                    <span className="text-slate-900 font-medium text-right break-all">
-                      {formatValue(value)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <div className="grid lg:grid-cols-2 gap-6 mb-6">
+              <section className="bg-white border border-slate-200 rounded-xl p-6">
+                <h2 className="font-semibold text-slate-900 mb-4">Technical Metadata</h2>
+                <div className="space-y-3">
+                  {Object.entries(result.metadata).map(([key, value]) => (
+                    <div key={key} className="flex justify-between text-sm gap-4">
+                      <span className="text-slate-500 shrink-0">{key}</span>
+                      <span className="text-slate-900 font-medium text-right break-all">
+                        {formatValue(value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="bg-white border border-slate-200 rounded-xl p-6">
+                <h2 className="font-semibold text-slate-900 mb-4">Reliability Indicators</h2>
+                <div className="space-y-4">
+                  {(result.indicators ?? []).map((indicator) => {
+                    const styles = levelStyles(indicator.level);
+                    return (
+                      <div key={indicator.title} className={`p-4 rounded-lg border ${styles.box}`}>
+                        <div className="flex items-center justify-between gap-3 mb-2">
+                          <h3 className="font-medium text-slate-900 text-sm">{indicator.title}</h3>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${styles.badge}`}>
+                            {styles.label}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-700 leading-relaxed">{indicator.description}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            </div>
           </>
         )}
 
