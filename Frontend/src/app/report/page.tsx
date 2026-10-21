@@ -30,7 +30,7 @@ function formatValue(value: string | number | boolean | null | undefined) {
 export default function ReportPage() {
 const [result, setResult] = useState<AnalysisResult | null>(null);
 const [analyzedAt, setAnalyzedAt] = useState("");
-
+//
 useEffect(() => {
   const raw = sessionStorage.getItem("analysisResult");
   if (raw) setResult(JSON.parse(raw) as AnalysisResult);
