@@ -9,6 +9,7 @@ export default function UploadPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const acceptedTypes = ["image/jpeg", "image/png", "application/pdf"];
   const acceptedExtensions = [".jpg", ".jpeg", ".png", ".pdf"];
@@ -56,9 +57,35 @@ export default function UploadPage() {
     setSelectedFile(file);
   };
 
-  const handleAnalyze = () => {
-    if (!selectedFile) return;
-    router.push("/analysis");
+  const handleAnalyze = async () => {
+    if (!selectedFile || isSubmitting) return;
+
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Analysis failed.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      sessionStorage.setItem("analysisResult", JSON.stringify(data));
+      router.push("/analysis");
+    } catch {
+      setError("Could not reach the analysis service.");
+      setIsSubmitting(false);
+    }
   };
 
   const removeFile = () => {
@@ -68,7 +95,6 @@ export default function UploadPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Navigation */}
       <nav className="border-b border-slate-200 bg-white">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -115,7 +141,6 @@ export default function UploadPage() {
           </p>
         </div>
 
-        {/* Drop Zone */}
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -135,6 +160,7 @@ export default function UploadPage() {
             accept=".jpg,.jpeg,.png,.pdf"
             onChange={handleFileSelect}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            disabled={isSubmitting}
           />
 
           {!selectedFile ? (
@@ -194,7 +220,6 @@ export default function UploadPage() {
           )}
         </div>
 
-        {/* Error message */}
         {error && (
           <div className="mt-4 flex items-center justify-center gap-2 text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-3">
             <svg
@@ -215,7 +240,6 @@ export default function UploadPage() {
           </div>
         )}
 
-        {/* Action buttons */}
         <div className="mt-8 flex items-center justify-center gap-4">
           <Link
             href="/"
@@ -226,18 +250,17 @@ export default function UploadPage() {
 
           <button
             onClick={handleAnalyze}
-            disabled={!selectedFile}
+            disabled={!selectedFile || isSubmitting}
             className={`px-8 py-2.5 rounded-lg font-medium transition-colors duration-200 ${
-              selectedFile
+              selectedFile && !isSubmitting
                 ? "bg-slate-900 hover:bg-slate-800 text-white"
                 : "bg-slate-200 text-slate-400 cursor-not-allowed"
             }`}
           >
-            Start Analysis
+            {isSubmitting ? "Extracting metadata..." : "Start Analysis"}
           </button>
         </div>
 
-        {/* Info box */}
         <div className="mt-12 bg-blue-50 border border-blue-100 rounded-xl p-5">
           <h3 className="font-medium text-blue-900 mb-2">What happens next?</h3>
           <ul className="text-sm text-blue-800 space-y-1.5">

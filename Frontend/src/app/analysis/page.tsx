@@ -17,7 +17,13 @@ export default function AnalysisPage() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Simulate analysis progress
+    const raw = sessionStorage.getItem("analysisResult");
+    if (!raw) {
+      router.replace("/upload");
+    }
+  }, [router]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -38,29 +44,30 @@ export default function AnalysisPage() {
     else setCurrentStep(3);
 
     if (progress >= 100) {
-      // Redirect to report after completion
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         router.push("/report");
       }, 600);
+      return () => clearTimeout(timeout);
     }
   }, [progress, router]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Navigation */}
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <nav className="border-b border-slate-200 bg-white">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">LT</span>
+              <span className="text-white font-bold text-sm tracking-tight">LT</span>
             </div>
-            <span className="font-semibold text-slate-900 text-lg">LegalTrust AI</span>
+            <span className="font-semibold text-slate-900 text-lg tracking-tight">
+              LegalTrust AI
+            </span>
           </Link>
-          <div className="text-sm text-slate-500">Prototype</div>
+          <span className="text-sm text-slate-500 font-medium">Prototype</span>
         </div>
       </nav>
 
-      <main className="max-w-xl mx-auto px-6 py-24">
+      <main className="flex-1 max-w-xl mx-auto px-6 py-24 w-full">
         <div className="text-center mb-12">
           <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <svg
@@ -85,7 +92,7 @@ export default function AnalysisPage() {
             </svg>
           </div>
 
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+          <h1 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">
             Analyzing your file
           </h1>
           <p className="text-slate-600">
@@ -93,11 +100,10 @@ export default function AnalysisPage() {
           </p>
         </div>
 
-        {/* Progress bar */}
         <div className="mb-10">
           <div className="flex justify-between text-sm text-slate-600 mb-2">
             <span>Progress</span>
-            <span className="font-medium">{progress}%</span>
+            <span className="font-medium tabular-nums">{progress}%</span>
           </div>
           <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
             <div
@@ -107,8 +113,7 @@ export default function AnalysisPage() {
           </div>
         </div>
 
-        {/* Steps */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {steps.map((step, index) => {
             const isCompleted = index < currentStep;
             const isCurrent = index === currentStep;
@@ -116,7 +121,7 @@ export default function AnalysisPage() {
             return (
               <div
                 key={step.id}
-                className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                className={`flex items-center gap-3 p-3.5 rounded-lg transition-all duration-300 ${
                   isCurrent ? "bg-white border border-slate-200 shadow-sm" : ""
                 }`}
               >
@@ -130,8 +135,15 @@ export default function AnalysisPage() {
                   }`}
                 >
                   {isCompleted ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
                     step.id
