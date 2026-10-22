@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import exifr from "exifr";
 import { PDFDocument } from "pdf-lib";
+import { CohereClient } from "cohere-ai";
 
 type Metadata = Record<string, string | number | boolean | null>;
 
@@ -45,8 +46,16 @@ export async function POST(request: NextRequest) {
     const overallStatus = indicators.some((item) => item.level === "danger")
       ? "Suspicious signals"
       : indicators.some((item) => item.level === "warning")
-      ? "Attention required"
-      : "No obvious anomaly";
+        ? "Attention required"
+        : "No obvious anomaly";
+
+    const summary = await writeSummary({
+      fileName: file.name,
+      kind,
+      metadata,
+      indicators,
+      overallStatus,
+    });
 
     return NextResponse.json({
       fileName: file.name,
@@ -56,6 +65,7 @@ export async function POST(request: NextRequest) {
       metadata,
       indicators,
       overallStatus,
+      summary,
     });
   } catch (error) {
     console.error(error);
@@ -221,8 +231,7 @@ function detectImageSignals(metadata: Metadata): Indicator[] {
       indicators.push({
         title: "Capture and digitization dates differ",
         level: "warning",
-        description:
-          "The original capture date and the digitized date are more than 24 hours apart.",
+        description: "The original capture date and the digitized date are more than 24 hours apart.",
       });
     }
   }
@@ -282,4 +291,53 @@ function toText(value: unknown) {
 function toNumber(value: unknown) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+async function writeSummary(input: {
+  fileName: string;
+  kind: string;
+  metadata: Metadata;
+  indicators: Indicator[];
+  overallStatus: string;
+}) {
+  const fallback =
+    "Technical metadata was extracted and checked with fixed rules. These indicators support human review and do not decide whether the file is authentic.";
+
+  const apiKey = process.env.COHERE_API_KEY;
+  if (!apiKey) return fallback;
+
+  try {
+    const cohere = new CohereClient({
+      token: apiKey,
+    });
+
+    const prompt = `You write a short Verification Profile summary for legal professionals.
+Use only the facts below. Do not invent anomalies.
+Write 3 or 4 sentences in English.
+Mention the overall status, the main warnings if any, and that this is decision support, not proof.
+
+File: ${input.fileName}
+Kind: ${input.kind}
+Status: ${input.overallStatus}
+Metadata: ${JSON.stringify(input.metadata)}
+Indicators: ${JSON.stringify(input.indicators)}`;
+
+    // Remplacement du modèle obsolète par 'command-r-plus-08-2024' ou 'command-r'
+    const response = await cohere.chat({
+      model: "command-r-plus-08-2024",
+      message: prompt,
+    });
+
+    const text = response.text?.trim();
+
+    if (!text) {
+      console.error("Cohere empty response");
+      return fallback;
+    }
+
+    return text;
+  } catch (error) {
+    console.error("Cohere request failed", error);
+    return fallback;
+  }
 }

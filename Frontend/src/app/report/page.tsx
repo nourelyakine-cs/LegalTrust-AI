@@ -17,6 +17,7 @@ type AnalysisResult = {
   metadata: Record<string, string | number | boolean | null>;
   indicators: Indicator[];
   overallStatus: string;
+  summary: string;
 };
 
 const limitations = [
@@ -138,12 +139,11 @@ export default function ReportPage() {
         ) : (
           <>
             <section className="bg-white border border-slate-200 rounded-xl p-6 mb-6">
-              <h2 className="font-semibold text-slate-900 mb-3">Summary</h2>
-              <p className="text-slate-700 leading-relaxed">
-                Technical metadata was extracted and checked with fixed rules. These indicators
-                support human review. They do not decide whether the file is authentic.
-              </p>
-            </section>
+  <h2 className="font-semibold text-slate-900 mb-3">Summary</h2>
+  <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
+    {result.summary}
+  </p>
+</section>
 
             <div className="grid lg:grid-cols-2 gap-6 mb-6">
               <section className="bg-white border border-slate-200 rounded-xl p-6">
