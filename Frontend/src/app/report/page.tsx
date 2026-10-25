@@ -26,6 +26,13 @@ const limitations = [
   "Results should be used as decision-support indicators, not as definitive legal evidence.",
 ];
 
+const legalInterpretation = [
+  "These findings describe technical traces found in the file. They do not establish authenticity, authorship, ownership, or legal admissibility.",
+  "A warning means the indicator deserves human review. It is not a finding that the file was forged or unlawfully altered.",
+  "Missing or incomplete metadata alone does not prove manipulation. Metadata can be absent because of export, conversion, privacy settings, or the tool that created the file.",
+  "Consistent metadata does not prove that the file is genuine. This profile supports professional assessment and must be read together with the context of the case.",
+];
+
 function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 }
@@ -139,11 +146,9 @@ export default function ReportPage() {
         ) : (
           <>
             <section className="bg-white border border-slate-200 rounded-xl p-6 mb-6">
-  <h2 className="font-semibold text-slate-900 mb-3">Summary</h2>
-  <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
-    {result.summary}
-  </p>
-</section>
+              <h2 className="font-semibold text-slate-900 mb-3">Summary</h2>
+              <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{result.summary}</p>
+            </section>
 
             <div className="grid lg:grid-cols-2 gap-6 mb-6">
               <section className="bg-white border border-slate-200 rounded-xl p-6">
@@ -169,7 +174,9 @@ export default function ReportPage() {
                       <div key={indicator.title} className={`p-4 rounded-lg border ${styles.box}`}>
                         <div className="flex items-center justify-between gap-3 mb-2">
                           <h3 className="font-medium text-slate-900 text-sm">{indicator.title}</h3>
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${styles.badge}`}>
+                          <span
+                            className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${styles.badge}`}
+                          >
                             {styles.label}
                           </span>
                         </div>
@@ -182,6 +189,18 @@ export default function ReportPage() {
             </div>
           </>
         )}
+
+        <section className="bg-white border border-slate-200 rounded-xl p-6 mb-6">
+          <h2 className="font-semibold text-slate-900 mb-3">Legal Interpretation</h2>
+          <ul className="space-y-2">
+            {legalInterpretation.map((item) => (
+              <li key={item} className="flex gap-2 text-sm text-slate-700">
+                <span className="text-slate-400">•</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         <section className="bg-slate-100 border border-slate-200 rounded-xl p-6 mb-8">
           <h2 className="font-semibold text-slate-900 mb-3">Limitations of this analysis</h2>
